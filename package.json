@@ -1,0 +1,19 @@
+{
+  "name": "tip.cc-tip-parser",
+  "version": "1.0.0",
+  "description": "A simple Parser to Parse tip.cc Tips in Java- or Typescript.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Walledgarden/tip.cc-tip-parser.git"
+  },
+  "author": "Walledgarden",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Walledgarden/tip.cc-tip-parser/issues"
+  },
+  "homepage": "https://github.com/Walledgarden/tip.cc-tip-parser#readme"
+}
