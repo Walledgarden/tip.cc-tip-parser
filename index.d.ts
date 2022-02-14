@@ -1,8 +1,6 @@
 export interface ITip {
   valid: boolean,
   currency: string,
-  emote_id: string,
-  emote_name: string,
   sender: string,
   receiver: string,
   value: number,

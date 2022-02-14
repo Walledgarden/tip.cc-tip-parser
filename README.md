@@ -59,4 +59,5 @@ console.log(tip);
 }
 ```
 
-> The author is not responsible for any loss which has been made through possible vulnerabilities. If you find one open a Github Issue!
+> The author is not responsible for any loss which has been made through possible vulnerabilities.
+> If you find one open a Github Issue!
