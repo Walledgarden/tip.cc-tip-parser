@@ -1,7 +1,7 @@
 const TIP_REGEX = /^(\<a?\:.+\:\d{17,}\>|\:.+\:)\s<@!?(\d{17,})>\ssent\s<@!?(\d{17,})>\s([\d\.\,]+)\s([A-Za-z\d\s]+)\s(.+\s\$([\d\.]+)\)\.|\.)$/;
 
 const PREFIXES = [
-    { name: 'NANO', value: 'Ӿ' }
+    { name: 'XNO', value: 'Ӿ' }
 ];
 
 const SUFFIXES = [
@@ -36,6 +36,10 @@ const ALIASES = {
     'lovelaces': {
         name: 'ADA',
         divisor: 1000000
+    },
+    'satoshi cash': {
+        name: 'BCH',
+        divisor: 100000000
     }
 }
 
