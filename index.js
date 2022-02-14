@@ -60,6 +60,7 @@ const ALIASES = {
  * @returns {Tip}
  */
 module.exports.parseTip = (tip_message) => {
+    tip_message = tip_message.replaceAll(/[\*]/g, '');
     let result = { valid: false, currency: '', sender: '', receiver: '', value: 0, currency: '', usd: 0 }
     if (!TIP_REGEX.test(tip_message)) return result;
     tip_message.replaceAll(new RegExp(`(${PREFIXES.map(r => r.value).join("|")})\s?([0-9\.,]+)?`, "gi"), (o, prefix = '$1', value = '$2') => { return `${value} ${PREFIXES.find(r => r.value === prefix).name}` }).replaceAll(new RegExp(`(${SUFFIXES.map(r => r.value).join("|")})`, "gi"), (o, f = '$1') => { return SUFFIXES.find(r => r.value === f).name; });
