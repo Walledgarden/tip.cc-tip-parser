@@ -87,8 +87,8 @@ module.exports.parseTip = (tip_message) => {
  */
 module.exports.parseLog = (log_embed) => {
     const amount_field = log_embed.fields.find(f => f.name === "Amount").value.replaceAll(/[\*]/g, '');
-    const from_field = log_embed.fields.find(f => f.name === "From");
-    const to_field = log_embed.fields.find(f => f.name === "Recipient(s)");
+    const from_field = log_embed.fields.find(f => f.name === "From").value;
+    const to_field = log_embed.fields.find(f => f.name === "Recipient(s)").value;
 
     const parsed_amount = amount_field.match(/(<a?:.+:\d+>)\s([\d\,\.]+)\s([A-Za-z\d\s]+)\s(\(\≈\s\$([\,\.\d]+)\))?/);
 
