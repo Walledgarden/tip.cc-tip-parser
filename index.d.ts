@@ -1,6 +1,7 @@
 export interface ITip {
   valid: boolean,
   currency: string,
+  emote: string,
   sender: string,
   receiver: string,
   value: number,
@@ -9,4 +10,8 @@ export interface ITip {
 
 export function parseTip(
     tip_message: string
+): ITip;
+
+export function parseLog(
+    tip_message: any
 ): ITip;
