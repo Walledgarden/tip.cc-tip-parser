@@ -86,13 +86,25 @@ module.exports.parseTip = (tip_message) => {
  * @returns {Tip}
  */
 module.exports.parseLog = (log_embed) => {
-    const amount_field = log_embed.fields.find(f => f.name === "Amount").value.replaceAll(/[\*]/g, '');
+    const SUFFIXES = {
+        'Ð': 'DOGE',
+        'Ᵽ': 'PPC',
+        'ꜩ': 'XTZ',
+    };
+
+    const PREFIXES = {
+        'Ӿ': 'NANO',
+    };
+
+    const PREFIX_SUFFIX_REGEX = new RegExp(`(([${[...Object.keys(PREFIXES)].join('')}])\\s?(\\d+\\.?\\d*)|(\\d+\\.?\\d*)\\s?([${[...Object.keys(SUFFIXES)].join('')}]))`);
+
+    const amount_field = log_embed.fields.find(f => f.name === "Amount").value.replaceAll(/[\*\,]/g, '');
     const from_field = log_embed.fields.find(f => f.name === "From").value;
     const to_field = log_embed.fields.find(f => f.name === "Recipient(s)").value;
 
     const parsed_amount = amount_field.match(/(<a?:.+:\d+>)\s([\d\,\.]+)\s([A-Za-z\d\s]+)\s(\(\≈\s\$([\,\.\d]+)\))?/);
 
-    return {
+    let result = {
         valid: true,
         currency: parsed_amount[3],
         emote: parsed_amount[1],
@@ -101,4 +113,21 @@ module.exports.parseLog = (log_embed) => {
         value: parseFloat(parsed_amount[2].replaceAll(/[^0-9\.]/g, '')),
         usd: typeof parsed_amount[5] === "undefined" ? null : parseFloat(parsed_amount[5].replaceAll(/[^0-9\.]/g, ''))
     }
+
+    if (PREFIX_SUFFIX_REGEX.test(amount_field)) {
+        const [, , prefix, prefixedValue, suffixedValue, suffix] = text.match(PREFIX_SUFFIX_REGEX);
+        if (prefix) return { value: prefixedValue, currency: PREFIXES[prefix] };
+        if (prefix) {
+            result.value = prefixedValue;
+            result.currency = PREFIXES[prefix];
+            result.usd = amount_field.match(/\(≈\s\$([\d\.]+)\)/)[1];
+        }
+        if (suffix) {
+            result.value = suffixedValue;
+            result.currency = SUFFIXES[suffix];
+            result.usd = amount_field.match(/\(≈\s\$([\d\.]+)\)/)[1];
+        }
+    }
+
+    return result;
 }

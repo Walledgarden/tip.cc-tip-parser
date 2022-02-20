@@ -61,3 +61,5 @@ console.log(tip);
 
 > The author is not responsible for any loss which has been made through possible vulnerabilities.
 > If you find one open a Github Issue!
+
+> Special thanks to [oknu#7863](https://discord.com/users/350270174462607360) who made most of the log parser and the [tip.cc](https://tip.cc) discord bot, which makes it really easy to use crypto currency on discord, with having a wallet connected to your user account 🐻
