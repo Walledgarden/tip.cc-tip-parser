@@ -116,7 +116,6 @@ module.exports.parseLog = (log_embed) => {
 
     if (PREFIX_SUFFIX_REGEX.test(amount_field)) {
         const [, , prefix, prefixedValue, suffixedValue, suffix] = text.match(PREFIX_SUFFIX_REGEX);
-        if (prefix) return { value: prefixedValue, currency: PREFIXES[prefix] };
         if (prefix) {
             result.value = prefixedValue;
             result.currency = PREFIXES[prefix];
