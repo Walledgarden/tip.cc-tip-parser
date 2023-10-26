@@ -9,7 +9,7 @@ const TIP = String.raw`${SYMBOL}\s?${AMOUNT}\s?${CODE}(?:\s\(≈.\$${VALUE}\))?`
 const TIP_REGEX = new RegExp(
     String.raw`^${EMOJI}\s${SENDER}\ssent\s${RECEIVER}\s${TIP}\.$`
 );
-const LOG_REGEX = new RegExp(String.raw`^${EMOJI}\s${TIP}`);
+const LOG_REGEX = new RegExp(String.raw`^${EMOJI}\s${TIP}$`);
 
 const SYMBOLS = {
     '₳': 'ADA',
