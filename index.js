@@ -1,45 +1,65 @@
-const TIP_REGEX = /^(\<a?\:.+\:\d{17,}\>|\:.+\:)\s<@!?(\d{17,})>\ssent\s<@!?(\d{17,})>\s([\d\.\,]+)\s([A-Za-z\d\s]+)(\s.+\s\$([\d\.]+)\)\.|\.)$/;
+const EMOJI = String.raw`(?<emoji>\<[^>]+\>|\:[^:]+\:)`
+const SENDER = String.raw`<@!?(?<sender>[^>]+)>`
+const RECEIVER = String.raw`<@!?(?<receiver>[^>]+)>`
+const SYMBOL = String.raw`(?<symbol>\D*)?`
+const AMOUNT = String.raw`(?<amount>[\d.,]+)`
+const CODE = String.raw`(?<code>[^\s]+)?`
+const VALUE = String.raw`(?<value>[\d.,]+)`
+const TIP = String.raw`${SYMBOL}\s?${AMOUNT}\s?${CODE}(?:\s\(≈.\$${VALUE}\))?`
+const TIP_REGEX = new RegExp(
+    String.raw`^${EMOJI}\s${SENDER}\ssent\s${RECEIVER}\s${TIP}\.$`
+);
+const LOG_REGEX = new RegExp(String.raw`^${EMOJI}\s${TIP}$`);
 
-const PREFIXES = [
-    { name: 'XNO', value: 'Ӿ' }
-];
-
-const SUFFIXES = [
-    { name: 'DOGE', value: 'Ð' },
-    { name: 'PPC', value: 'Ᵽ' },
-    { name: 'XTZ', value: 'ꜩ' },
-    { name: 'ADA', value: '₳' },
-    { name: 'BTC', value: '₿' }
-];
+const SYMBOLS = {
+    '₳': 'ADA',
+    '₿': 'BTC', // not from tip.cc
+    'Ð': 'DOGE',
+    'Ᵽ': 'PPC',
+    'Ӿ': 'XNO',
+    'ꜩ': 'XTZ',
+};
 
 const ALIASES = {
-    'wei': {
-        name: 'ETH',
-        divisor: 1000000000000000000
+    'Bytes?': {
+        name: 'GBytes',
+        decimals: 1e9
     },
     'gwei': {
         name: 'ETH',
-        divisor: 1000000000
+        decimals: 1e9
     },
-    'satoshi': {
+    'mBTC': {
         name: 'BTC',
-        divisor: 100000000
+        decimals: 1e3
     },
-    'mbtc': {
-        name: 'BTC',
-        divisor: 1000
+    'nanoRyo': {
+        name: 'RYO',
+        decimals: 1e9
     },
-    'piconero': {
+    'piconeros?': {
         name: 'XMR',
-        divisor: 1000000000000
+        decimals: 1e12
     },
-    'lovelaces': {
-        name: 'ADA',
-        divisor: 1000000
+    'satoshis?': {
+        name: 'BTC',
+        decimals: 1e8
     },
-    'satoshi cash': {
+    'satoshis? cash': {
         name: 'BCH',
-        divisor: 100000000
+        decimals: 1e8
+    },
+    'satoshis? gold': {
+        name: 'BTG',
+        decimals: 1e8
+    },
+    'satoshis? sv': {
+        name: 'BSV',
+        decimals: 1e8
+    },
+    'wei': {
+        name: 'ETH',
+        decimals: 1e18
     }
 }
 
@@ -59,23 +79,38 @@ const ALIASES = {
  * @param {string} tip_message Tip Message, providen from tip.cc
  * @returns {Tip}
  */
-module.exports.parseTip = (tip_message) => {
-    tip_message = tip_message.replaceAll(/[\*]/g, '');
-    let result = { valid: false, currency: '', emote: '', sender: '', receiver: '', value: 0, usd: 0 }
-    tip_message = tip_message.replaceAll(new RegExp(`(${PREFIXES.map(r => r.value).join("|")})\s?([0-9\.,]+)?`, "gi"), (o, prefix = '$1', value = '$2') => { return `${value} ${PREFIXES.find(r => r.value === prefix).name}` }).replaceAll(new RegExp(`(${SUFFIXES.map(r => r.value).join("|")})`, "gi"), (o, f = '$1') => { return SUFFIXES.find(r => r.value === f).name; });
+parseTip = (tip_message) => {
+    tip_message = tip_message.replaceAll(/\*/g, '');
+    let result = {
+        valid: false,
+        emote: '',
+        sender: '',
+        receiver: '',
+        value: 0,
+        currency: '',
+        usd: 0
+    }
     if (!TIP_REGEX.test(tip_message)) return result;
     const tip = tip_message.match(TIP_REGEX);
-    result.valid = true;
-    result.emote = tip[1];
-    result.sender = tip[2];
-    result.receiver = tip[3];
-    result.value = parseFloat(tip[4].replaceAll(/[^0-9\.]/g, ''));
-    result.currency = tip[5];
-    result.usd = typeof tip[7] === "undefined" ? null : parseFloat(tip[7].replaceAll(/[^0-9\.]/g, ''));
-    if (typeof ALIASES[result.currency.toLowerCase()] !== "undefined") {
-        const n = ALIASES[result.currency.toLowerCase()];
-        result.currency = n.name;
-        result.value /= n.divisor;
+    result = {
+        valid: true,
+        emote: tip.groups.emoji,
+        sender: tip.groups.sender,
+        receiver: tip.groups.receiver,
+        value: parseFloat(tip.groups.amount.replaceAll(/[^\d.]/g, '')),
+        currency: (tip.groups.code || tip.groups.symbol).replace(
+            new RegExp(String.raw`(${Object.keys(SYMBOLS).join('|')})`, 'gi'),
+            (_, symbol = '$1') => SYMBOLS[symbol]
+        ),
+        usd: parseFloat(tip.groups.value?.replaceAll(/[^\d.]/g, '') || 0) || null,
+    };
+    const matching_alias = result.currency.match(
+        new RegExp(`^${Object.keys(ALIASES).map(key => `(${key})`).join('|')}$`, 'i')
+    );
+    if (matching_alias !== null) {
+        const alias = Object.keys(ALIASES)[matching_alias.slice(1).indexOf(matching_alias[0])];
+        result.currency = alias.name;
+        result.value /= alias.decimals;
     }
     return result;
 }
@@ -85,48 +120,21 @@ module.exports.parseTip = (tip_message) => {
  * @param {object} tip_message Embed
  * @returns {Tip}
  */
-module.exports.parseLog = (log_embed) => {
-    const SUFFIXES = {
-        'Ð': 'DOGE',
-        'Ᵽ': 'PPC',
-        'ꜩ': 'XTZ',
-    };
-
-    const PREFIXES = {
-        'Ӿ': 'NANO',
-    };
-
-    const PREFIX_SUFFIX_REGEX = new RegExp(`(([${[...Object.keys(PREFIXES)].join('')}])\\s?(\\d+\\.?\\d*)|(\\d+\\.?\\d*)\\s?([${[...Object.keys(SUFFIXES)].join('')}]))`);
-
-    const amount_field = log_embed.fields.find(f => f.name === "Amount").value.replaceAll(/[\*\,]/g, '');
-    const from_field = log_embed.fields.find(f => f.name === "From").value;
-    const to_field = log_embed.fields.find(f => f.name === "Recipient(s)").value;
-
-    const parsed_amount = amount_field.match(/(<a?:.+:\d+>)\s([\d\,\.]+)\s([A-Za-z\d\s]+)\s(\(\≈\s\$([\,\.\d]+)\))?/);
-
-    let result = {
+parseLog = (log_embed) => {
+    const amount_field = log_embed.fields.find(f => f.name === 'Amount').value.replaceAll(/[*,]/g, '');
+    const from_field = log_embed.fields.find(f => f.name === 'From').value;
+    const to_field = log_embed.fields.find(f => f.name === 'Recipient(s)').value;
+    const tip = amount_field.match(LOG_REGEX);
+    return {
         valid: true,
-        currency: parsed_amount[3],
-        emote: parsed_amount[1],
-        sender: from_field.match(/<@!?(\d+)>/)[1],
-        receiver: to_field.match(/<@!?(\d+)>/)[1],
-        value: parseFloat(parsed_amount[2].replaceAll(/[^0-9\.]/g, '')),
-        usd: typeof parsed_amount[5] === "undefined" ? null : parseFloat(parsed_amount[5].replaceAll(/[^0-9\.]/g, ''))
+        emote: tip.groups.emoji,
+        sender: from_field.match(SENDER)[1],
+        receiver: to_field.match(RECEIVER)[1],
+        value: parseFloat(tip.groups.amount.replaceAll(/[^\d.]/g, '')),
+        currency: (tip.groups.code || tip.groups.symbol).replace(
+            new RegExp(String.raw`(${Object.keys(SYMBOLS).join('|')})`, 'gi'),
+            (_, symbol = '$1') => SYMBOLS[symbol]
+        ),
+        usd: parseFloat(tip.groups.value?.replaceAll(/[^\d.]/g, '') || 0) || null,
     }
-
-    if (PREFIX_SUFFIX_REGEX.test(amount_field)) {
-        const [, , prefix, prefixedValue, suffixedValue, suffix] = text.match(PREFIX_SUFFIX_REGEX);
-        if (prefix) {
-            result.value = prefixedValue;
-            result.currency = PREFIXES[prefix];
-            result.usd = amount_field.match(/\(≈\s\$([\d\.]+)\)/)[1];
-        }
-        if (suffix) {
-            result.value = suffixedValue;
-            result.currency = SUFFIXES[suffix];
-            result.usd = amount_field.match(/\(≈\s\$([\d\.]+)\)/)[1];
-        }
-    }
-
-    return result;
 }
